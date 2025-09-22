@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Models\produk as ModelProduk;
+use App\Models\Produk as ModelProduk;
 use Livewire\WithFileUploads;
 
 use Maatwebsite\Excel\Facades\Excel;
