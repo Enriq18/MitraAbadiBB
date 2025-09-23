@@ -4,7 +4,7 @@ namespace App\Imports;
 
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use App\Models\produk as ModelProduk;
+use App\Models\Produk as ModelProduk;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 
 class Produk implements ToCollection, WithStartRow
