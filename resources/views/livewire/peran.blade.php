@@ -7,10 +7,6 @@
                     class="btn {{ $pilihanMenu == 'lihat' ? 'btn-light' : 'btn-outline-light' }}">
                     Semua peran
                 </button>
-                <button wire:click="pilihMenu('tambah')"
-                    class="btn {{ $pilihanMenu == 'tambah' ? 'btn-light' : 'btn-outline-light' }}">
-                    Tambah peran
-                </button>
                 <button wire:loading class="btn btn-info">Loading..</button>
             </div>
         </div>
