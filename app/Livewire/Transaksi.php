@@ -238,44 +238,52 @@ class Transaksi extends Component
         $this->dispatch('receiptReady');
     }
 
-
-
     private function generateReceipt()
     {
-        $lineBreak = str_repeat("-", 45) . "\n";
+        $lineWidth = 32;
+
+        function formatMoneyLine($label, $amount, $width = 32)
+        {
+            $labelWidth = 11; // "Kembalian " paling panjang
+            $labelText = str_pad($label, $labelWidth, " ", STR_PAD_RIGHT) . ": Rp ";
+
+            // angka diformat
+            $numberText = number_format($amount, 2, ',', '.');
+
+            // hitung sisa spasi agar angka rata kanan
+            $spaces = $width - strlen($labelText) - strlen($numberText);
+            if ($spaces < 0) $spaces = 0;
+
+            return $labelText . str_repeat(" ", $spaces) . $numberText . "\n";
+        }
+        $lineBreak = str_repeat("-", $lineWidth) . "\n";
+
         $receipt  = $lineBreak;
-        $receipt .= "               STRUK PEMBELIAN            \n";
-        $receipt .= $lineBreak;
-        $receipt .= "No Transaksi : " . $this->transaksiAktif->kode . "\n";
-        $receipt .= "Tanggal      : " . now()->format('d-m-Y H:i') . "\n";
-        $receipt .= "Petugas      : " . ($this->transaksiAktif->user->name ?? '-') . "\n";
-        $receipt .= $lineBreak;
-        $receipt .= "Produk  Qty  Harga      Subtotal\n";
+        $receipt .= "         STRUK PEMBELIAN" . "\n";
         $receipt .= $lineBreak;
 
         $detailTransaksi = DetailTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
 
         foreach ($detailTransaksi as $detail) {
-            $produk = Produk::find($detail->produk_id);
-            $namaProduk = wordwrap($produk->nama, 50, "\n");
-
-            $qty = str_pad($detail->jumlah, 3, " ", STR_PAD_LEFT);
-            $harga = str_pad(number_format($produk->harga, 2, ',', '.'), 10, " ", STR_PAD_LEFT);
-            $subtotal = str_pad(number_format($detail->subtotal, 2, ',', '.'), 10, " ", STR_PAD_LEFT);
-
-
+            // Nama produk (baris pertama, bisa panjang tapi dipotong 32 char max)
+            $namaProduk = wordwrap($detail->produk->nama, $lineWidth, "\n", true);
             $receipt .= $namaProduk . "\n";
-            $receipt .= "       $qty  $harga   $subtotal\n";
+
+            // Baris kedua: Qty, Harga, Subtotal
+            $qty      = str_pad($detail->jumlah, 3, " ", STR_PAD_LEFT);
+            $harga    = str_pad(number_format($detail->produk->harga, 0, ',', '.'), 10, " ", STR_PAD_LEFT);
+            $subtotal = str_pad(number_format($detail->subtotal, 0, ',', '.'), 15, " ", STR_PAD_LEFT);
+
+            $receipt .= "  " . $qty . " x" . $harga . $subtotal . "\n";
         }
 
         $receipt .= $lineBreak;
-        $receipt .= "Total     : Rp " . number_format($this->transaksiAktif->total, 2, ',', '.') . "\n";
-        $receipt .= "Bayar     : Rp " . number_format($this->bayar, 2, ',', '.') . "\n";
-        $receipt .= "Kembalian : Rp " . number_format($this->kembalian, 2, ',', '.') . "\n";
-        $receipt .= "Status    : " . strtoupper($this->transaksiAktif->status) . "\n";
+        $receipt .= formatMoneyLine("Total", $this->transaksiAktif->total, $lineWidth);
+        $receipt .= formatMoneyLine("Bayar", $this->bayar, $lineWidth);
+        $receipt .= formatMoneyLine("Kembalian", $this->kembalian, $lineWidth);
         $receipt .= $lineBreak;
-        $receipt .= "     Terima Kasih atas Kunjungan Anda!     \n";
-        $receipt .= "       Semoga Hari Anda Menyenangkan      \n";
+        $receipt .= "         Terima Kasih!\n";
+        $receipt .= "  Semoga Hari Anda Menyenangkan\n";
         $receipt .= $lineBreak;
 
         $this->receipt = $receipt;
