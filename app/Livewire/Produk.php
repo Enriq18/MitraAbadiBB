@@ -18,11 +18,12 @@ class Produk extends Component
     public $kode;
     public $merek;
     public $persamaan;
-    public $harga;
     public $produkTerpilih;
     public $fileExcel;
     public $kataKunci = '';
     public $semuaProduk = [];
+
+    public $harga;
     public $minimal_stok_toko = 0;
     public $minimal_stok_toko_gudang = 0;
 

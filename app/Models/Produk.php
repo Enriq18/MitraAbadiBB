@@ -14,9 +14,12 @@ class Produk extends Model
         'kode',
         'merek',
         'persamaan',
-        'harga',
-        'minimal_stok_toko',
-        'minimal_stok_toko_gudang'
+    ];
+
+    protected $casts = [
+        'harga' => 'float',
+        'minimal_stok_toko' => 'integer',
+        'minimal_stok_toko_gudang' => 'integer',
     ];
 
     public function stokGudang()
