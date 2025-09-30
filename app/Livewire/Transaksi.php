@@ -256,9 +256,13 @@ class Transaksi extends Component
             $printer->setJustification(Printer::JUSTIFY_CENTER);
             $printer->text("================================\n");
 
-            $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT);
+
+            if ($this->transaksiAktif->gudang) {
+                $printer->setTextSize(2, 2);
+                $printer->text(strtoupper($this->transaksiAktif->gudang->nama) . "\n");
+                $printer->setTextSize(1, 1);
+            }
             $printer->text("STRUK PEMBELIAN\n");
-            $printer->selectPrintMode();
 
             $printer->text("================================\n");
 
