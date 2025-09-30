@@ -3,10 +3,6 @@
     <div class="row mb-3">
         <div class="col-12">
             <div class="d-flex flex-wrap flex-md-nowrap justify-content-center gap-2">
-                <button wire:click="pilihMenu('lihat')"
-                    class="btn {{ $pilihanMenu == 'lihat' ? 'btn-light' : 'btn-outline-light' }}">
-                    Semua peran
-                </button>
                 <button wire:loading class="btn btn-info">Loading..</button>
             </div>
         </div>

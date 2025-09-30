@@ -5,9 +5,9 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Transaksi;
 use Carbon\Carbon;
-
 use App\Models\StokGudang;
 use App\Models\Produk;
+use App\Models\Gudang;
 
 class Beranda extends Component
 {
@@ -16,28 +16,39 @@ class Beranda extends Component
     public $currentMonthRevenue;
     public $lastMonthRevenue;
 
-    public $stokMinimGudangMA;
+    public $stokMinimGudangTerpilih;
     public $stokMinimSemuaGudang;
+
+    public $gudangTerpilihId = 1; // Default gudang 1
+    public $gudangList;
 
     public function mount()
     {
-        $this->calculateRevenueDifference();
-        $this->getDailySalesStatistics();
+        $this->gudangList = Gudang::all();
+        $this->cekStokMinimum();
+    }
 
-        // Cek stok toko (gudang_id = 1) < minimal
-        $this->stokMinimGudangMA = Produk::all()->map(function ($produk) {
-            $stokToko = StokGudang::where('produk_id', $produk->id)
-                ->where('gudang_id', 1)
+    public function updatedGudangTerpilihId()
+    {
+        // Ketika gudang berubah, cek ulang stok
+        $this->cekStokMinimum();
+    }
+
+    private function cekStokMinimum()
+    {
+        // Cek stok gudang terpilih < minimal
+        $this->stokMinimGudangTerpilih = Produk::all()->map(function ($produk) {
+            $stokGudang = StokGudang::where('produk_id', $produk->id)
+                ->where('gudang_id', $this->gudangTerpilihId)
                 ->sum('stok');
 
             return [
                 'produk' => $produk,
-                'stok' => $stokToko,
+                'stok' => $stokGudang,
             ];
         })->filter(function ($item) {
             return $item['stok'] < $item['produk']->minimal_stok_toko;
         })->values();
-
 
         // Cek stok semua gudang < minimal
         $this->stokMinimSemuaGudang = Produk::all()->filter(function ($produk) {
@@ -49,42 +60,5 @@ class Beranda extends Component
                 'total_stok' => StokGudang::where('produk_id', $produk->id)->sum('stok'),
             ];
         })->values();
-    }
-
-
-    private function calculateRevenueDifference()
-    {
-        $currentYearMonth = Carbon::now()->format('Y-m');
-        $lastYearMonth = Carbon::now()->subMonth()->format('Y-m');
-
-        $this->currentMonthRevenue = Transaksi::whereRaw("strftime('%Y-%m', created_at) = ?", [$currentYearMonth])
-            ->where('status', 'selesai')
-            ->sum('total');
-
-        $this->lastMonthRevenue = Transaksi::whereRaw("strftime('%Y-%m', created_at) = ?", [$lastYearMonth])
-            ->where('status', 'selesai')
-            ->sum('total');
-    }
-
-    private function getDailySalesStatistics()
-    {
-        $this->yearlySales = Transaksi::selectRaw("strftime('%d', created_at) as day, SUM(total) as total")
-            ->whereRaw("strftime('%Y-%m', created_at) = ?", [Carbon::now()->format('Y-m')]) // bulan ini
-            ->where('status', 'selesai')
-            ->groupBy('day')
-            ->orderBy('day')
-            ->get()
-            ->pluck('total', 'day');
-    }
-
-
-    public function render()
-    {
-        return view('livewire.beranda')->with([
-            'revenueDifference' => $this->revenueDifference,
-            'yearlySales' => $this->yearlySales,
-            'currentMonthRevenue' => $this->currentMonthRevenue,
-            'lastMonthRevenue' => $this->lastMonthRevenue
-        ]);
     }
 }
