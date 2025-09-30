@@ -148,25 +148,20 @@
             </div>
         </div>
     @endif
-
     <script>
         function printReceipt() {
-            var content = document.getElementById("receipt-content").innerText;
-            var printWindow = window.open("", "", "width=600,height=600");
-            printWindow.document.write("<pre>" + content + "</pre>");
-            printWindow.document.close();
-            printWindow.print();
-
-            // Redirect kembali ke halaman transaksi setelah print
-            window.location.href = "{{ route('transaksi') }}";
-        }
-
-        // Auto print kalau receipt sudah siap
-        Livewire.on('receiptReady', function() {
+            let content = document.getElementById("receipt-content").innerText;
+            let w = window.open("", "", "width=600,height=600");
+            w.document.write("<pre>" + content + "</pre>");
+            w.document.close();
+            w.print();
             setTimeout(() => {
-                printReceipt();
-            }, 500); // kasih jeda biar DOM sempat render
-        });
+                w.close();
+                location.href = "{{ route('transaksi') }}";
+            }, 500);
+        }
     </script>
+
+
 
 </div>

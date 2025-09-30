@@ -244,32 +244,32 @@ class Transaksi extends Component
 
         function formatMoneyLine($label, $amount, $width = 32)
         {
-            $labelWidth = 11; // "Kembalian " paling panjang
+            $labelWidth = 11; // panjang "Kembalian "
             $labelText = str_pad($label, $labelWidth, " ", STR_PAD_RIGHT) . ": Rp ";
-
-            // angka diformat
             $numberText = number_format($amount, 2, ',', '.');
-
-            // hitung sisa spasi agar angka rata kanan
             $spaces = $width - strlen($labelText) - strlen($numberText);
             if ($spaces < 0) $spaces = 0;
 
             return $labelText . str_repeat(" ", $spaces) . $numberText . "\n";
         }
-        $lineBreak = str_repeat("-", $lineWidth) . "\n";
 
-        $receipt  = $lineBreak;
-        $receipt .= "         STRUK PEMBELIAN" . "\n";
+        $lineBreak = str_repeat("-", $lineWidth) . "\n";
+        $receipt  = "\x1B\x40\n";
+        $receipt .= $lineBreak;
+        $receipt .= str_pad("STRUK PEMBELIAN", $lineWidth, " ", STR_PAD_BOTH) . "\n";
+        $receipt .= $lineBreak;
+        $receipt .= "Tanggal    : " . date('d-m-Y') . "\n";
+        $receipt .= "Waktu      : " . date('H:i:s') . "\n";
         $receipt .= $lineBreak;
 
         $detailTransaksi = DetailTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
 
         foreach ($detailTransaksi as $detail) {
-            // Nama produk (baris pertama, bisa panjang tapi dipotong 32 char max)
+            // nama produk (dibungkus agar tidak kepotong)
             $namaProduk = wordwrap($detail->produk->nama, $lineWidth, "\n", true);
             $receipt .= $namaProduk . "\n";
 
-            // Baris kedua: Qty, Harga, Subtotal
+            // Qty, Harga, Subtotal
             $qty      = str_pad($detail->jumlah, 3, " ", STR_PAD_LEFT);
             $harga    = str_pad(number_format($detail->produk->harga, 0, ',', '.'), 10, " ", STR_PAD_LEFT);
             $subtotal = str_pad(number_format($detail->subtotal, 0, ',', '.'), 15, " ", STR_PAD_LEFT);
@@ -282,12 +282,15 @@ class Transaksi extends Component
         $receipt .= formatMoneyLine("Bayar", $this->bayar, $lineWidth);
         $receipt .= formatMoneyLine("Kembalian", $this->kembalian, $lineWidth);
         $receipt .= $lineBreak;
-        $receipt .= "         Terima Kasih!\n";
-        $receipt .= "  Semoga Hari Anda Menyenangkan\n";
-        $receipt .= $lineBreak;
+
+        // ucapan rata tengah
+        $receipt .= str_pad("Terima Kasih!", $lineWidth, " ", STR_PAD_BOTH) . "\n";
+        $receipt .= str_pad("Semoga Hari Anda Menyenangkan", $lineWidth, " ", STR_PAD_BOTH) . "\n";
 
         $this->receipt = $receipt;
     }
+
+
 
     public function hitungUlangTotal()
     {
