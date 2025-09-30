@@ -135,33 +135,4 @@
         </div>
     @endif
 
-    @if ($receipt)
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="card border-primary">
-                    <div class="card-header text-center fw-bold">Receipt</div>
-                    <div class="card-body">
-                        <pre id="receipt-content" class="bg-light p-2">{{ $receipt }}</pre>
-                        <button class="btn btn-primary mt-2" onclick="printReceipt()">Print Receipt</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-    <script>
-        function printReceipt() {
-            let content = document.getElementById("receipt-content").innerText;
-            let w = window.open("", "", "width=600,height=600");
-            w.document.write("<pre>" + content + "</pre>");
-            w.document.close();
-            w.print();
-            setTimeout(() => {
-                w.close();
-                location.href = "{{ route('transaksi') }}";
-            }, 500);
-        }
-    </script>
-
-
-
 </div>

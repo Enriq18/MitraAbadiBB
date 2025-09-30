@@ -9,6 +9,9 @@ use App\Models\StokGudang;
 use App\Models\Gudang;
 use App\Models\Transaksi as ModelTransaksi;
 use Illuminate\Support\Facades\Auth;
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\PrintConnectors\CupsPrintConnector;
+
 
 class Transaksi extends Component
 {
@@ -229,68 +232,83 @@ class Transaksi extends Component
         $this->transaksiAktif->save();
 
         $this->generateReceipt();
+        $this->dispatch('unlockMenu');
 
-        // Jangan redirect dulu — biarkan receipt tampil
-        // Reset sebagian kecuali receipt
         $this->resetExcept('receipt');
 
-        // Tambahkan trigger JS untuk buka print popup otomatis
-        $this->dispatch('receiptReady');
+        // Redirect ke halaman transaksi untuk transaksi baru
+        return redirect()->route('transaksi');
     }
 
     private function generateReceipt()
     {
-        $lineWidth = 32;
+        try {
+            $connector = new CupsPrintConnector("YICHIP3121_USB_Portable_Printer");
+            $printer = new Printer($connector);
 
-        function formatMoneyLine($label, $amount, $width = 32)
-        {
-            $labelWidth = 11; // panjang "Kembalian "
-            $labelText = str_pad($label, $labelWidth, " ", STR_PAD_RIGHT) . ": Rp ";
-            $numberText = number_format($amount, 2, ',', '.');
-            $spaces = $width - strlen($labelText) - strlen($numberText);
-            if ($spaces < 0) $spaces = 0;
+            // KUNCI: Initialize dan langsung tulis sesuatu
+            $printer->initialize();
 
-            return $labelText . str_repeat(" ", $spaces) . $numberText . "\n";
+            // Tulis baris kosong SEBELUM apapun untuk "membangunkan" printer
+            $printer->text("\n\n\n\n");
+
+            // Sekarang baru mulai konten
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->text("================================\n");
+
+            $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT);
+            $printer->text("STRUK PEMBELIAN\n");
+            $printer->selectPrintMode();
+
+            $printer->text("================================\n");
+
+            // Info transaksi
+            $printer->setJustification(Printer::JUSTIFY_LEFT);
+            $printer->text("Tanggal    : " . date('d-m-Y') . "\n");
+            $printer->text("Waktu      : " . date('H:i:s') . "\n");
+            $printer->text("Kasir      : " . Auth::user()->name . "\n");
+            $printer->text("--------------------------------\n");
+
+            // Detail produk
+            $detailTransaksi = DetailTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
+            foreach ($detailTransaksi as $detail) {
+                $namaProduk = wordwrap($detail->produk->nama, 32, "\n", true);
+                $printer->text($namaProduk . "\n");
+
+                $qty = str_pad($detail->jumlah, 3, " ", STR_PAD_LEFT);
+                $harga = str_pad(number_format($detail->produk->harga, 0, ',', '.'), 10, " ", STR_PAD_LEFT);
+                $subtotal = str_pad(number_format($detail->subtotal, 0, ',', '.'), 15, " ", STR_PAD_LEFT);
+                $printer->text(" " . $qty . " x" . $harga . $subtotal . "\n");
+            }
+
+            // Total
+            $printer->text("================================\n");
+
+            $printer->selectPrintMode(Printer::MODE_EMPHASIZED);
+            $printer->text("Total      : Rp " . number_format($this->transaksiAktif->total, 0, ',', '.') . "\n");
+            $printer->selectPrintMode();
+
+            $printer->text("Bayar      : Rp " . number_format($this->bayar, 0, ',', '.') . "\n");
+            $printer->text("Kembalian  : Rp " . number_format($this->kembalian, 0, ',', '.') . "\n");
+            $printer->text("================================\n");
+
+            // Footer
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->text("Terima Kasih!\n");
+            $printer->text("Semoga Hari Anda Menyenangkan\n");
+
+            // Margin bawah untuk robek
+            $printer->text("\n\n\n\n");
+
+            $printer->cut();
+            $printer->close();
+
+
+            session()->flash('message', 'Struk berhasil dicetak!');
+        } catch (\Exception $e) {
+            session()->flash('message', 'Gagal print: ' . $e->getMessage());
         }
-
-        $lineBreak = str_repeat("-", $lineWidth) . "\n";
-        $receipt  = "\x1B\x40\n";
-        $receipt .= $lineBreak;
-        $receipt .= str_pad("STRUK PEMBELIAN", $lineWidth, " ", STR_PAD_BOTH) . "\n";
-        $receipt .= $lineBreak;
-        $receipt .= "Tanggal    : " . date('d-m-Y') . "\n";
-        $receipt .= "Waktu      : " . date('H:i:s') . "\n";
-        $receipt .= $lineBreak;
-
-        $detailTransaksi = DetailTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
-
-        foreach ($detailTransaksi as $detail) {
-            // nama produk (dibungkus agar tidak kepotong)
-            $namaProduk = wordwrap($detail->produk->nama, $lineWidth, "\n", true);
-            $receipt .= $namaProduk . "\n";
-
-            // Qty, Harga, Subtotal
-            $qty      = str_pad($detail->jumlah, 3, " ", STR_PAD_LEFT);
-            $harga    = str_pad(number_format($detail->produk->harga, 0, ',', '.'), 10, " ", STR_PAD_LEFT);
-            $subtotal = str_pad(number_format($detail->subtotal, 0, ',', '.'), 15, " ", STR_PAD_LEFT);
-
-            $receipt .= "  " . $qty . " x" . $harga . $subtotal . "\n";
-        }
-
-        $receipt .= $lineBreak;
-        $receipt .= formatMoneyLine("Total", $this->transaksiAktif->total, $lineWidth);
-        $receipt .= formatMoneyLine("Bayar", $this->bayar, $lineWidth);
-        $receipt .= formatMoneyLine("Kembalian", $this->kembalian, $lineWidth);
-        $receipt .= $lineBreak;
-
-        // ucapan rata tengah
-        $receipt .= str_pad("Terima Kasih!", $lineWidth, " ", STR_PAD_BOTH) . "\n";
-        $receipt .= str_pad("Semoga Hari Anda Menyenangkan", $lineWidth, " ", STR_PAD_BOTH) . "\n";
-
-        $this->receipt = $receipt;
     }
-
-
 
     public function hitungUlangTotal()
     {
