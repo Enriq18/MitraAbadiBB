@@ -39,22 +39,13 @@
                                     <tr>
                                         <th>No</th>
                                         <th>Nama Peran</th>
-                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($semuaPeran as $peran)
                                         <tr>
                                             <td class="text-center">{{ $loop->iteration }}</td>
-                                            <td>{{ $peran->nama }}</td>
-                                            <td class="text-center">
-                                                <div class="d-flex justify-content-center gap-1">
-                                                    <button wire:click="pilihEdit({{ $peran->id }})"
-                                                        class="btn btn-warning btn-sm">Edit</button>
-                                                    <button wire:click="pilihHapus({{ $peran->id }})"
-                                                        class="btn btn-danger btn-sm">Hapus</button>
-                                                </div>
-                                            </td>
+                                            <td class="text-center">{{ $peran->nama }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
