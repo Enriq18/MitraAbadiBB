@@ -93,9 +93,16 @@
                 <div class="card mb-2">
                     <div class="card-body">
                         <p>
-                            <strong>Dari:</strong> {{ $transaksi->gudangAsal->nama }} →
-                            <strong>Ke:</strong> {{ $transaksi->gudangTujuan->nama }}
+                            <strong>Dari :</strong> {{ $transaksi->gudangAsal->nama }} →
+                            <strong>Ke :</strong> {{ $transaksi->gudangTujuan->nama }}
                         </p>
+                        <p>
+                            <strong>Tanggal Kirim :</strong>
+                            {{ $transaksi->tanggal_kirim ? date('d-m-Y (H:i)', strtotime($transaksi->tanggal_kirim)) : '-' }}<br>
+                            <strong>Tanggal Terima :</strong>
+                            {{ $transaksi->tanggal_terima ? date('d-m-Y (H:i)', strtotime($transaksi->tanggal_terima)) : '-' }}
+                        </p>
+
                         <p>
                             <strong>Status:</strong>
                             @if ($transaksi->status === 'diterima')
@@ -104,6 +111,9 @@
                                 <span class="badge bg-warning text-dark">Pending</span>
                             @endif
                         </p>
+
+
+
                         <ul>
                             @foreach ($transaksi->mutasiItems as $item)
                                 <li>

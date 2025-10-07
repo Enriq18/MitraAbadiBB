@@ -117,6 +117,7 @@ class MutasiBarang extends Component
                 'gudang_asal_id' => $this->gudang_asal_id,
                 'gudang_tujuan_id' => $this->gudang_tujuan_id,
                 'status' => 'pending',
+                'tanggal_kirim' => now(),
             ]);
 
             // Proses tiap produk

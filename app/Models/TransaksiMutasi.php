@@ -11,6 +11,7 @@ class TransaksiMutasi extends Model
         'gudang_asal_id',
         'gudang_tujuan_id',
         'status',
+        'tanggal_kirim',
         'tanggal_terima',
     ];
 
